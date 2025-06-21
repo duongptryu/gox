@@ -11,6 +11,7 @@ import (
 
 // RouterConfig holds router configuration options
 type RouterConfig struct {
+	ServiceName string
 	Environment string
 	EnableCORS  bool
 	EnableAuth  bool
@@ -32,7 +33,7 @@ func SetupRouter(config RouterConfig) *gin.Engine {
 	setupCoreMiddleware(router, config)
 
 	// Add health endpoints
-	setupHealthEndpoints(router)
+	setupHealthEndpoints(router, config.ServiceName)
 
 	return router
 }
@@ -58,13 +59,13 @@ func setupCoreMiddleware(router *gin.Engine, config RouterConfig) {
 }
 
 // setupHealthEndpoints adds standard health check endpoints
-func setupHealthEndpoints(router *gin.Engine) {
+func setupHealthEndpoints(router *gin.Engine, serviceName string) {
 	// Basic health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":    "ok",
 			"timestamp": time.Now().Unix(),
-			"service":   "tixgo-api",
+			"service":   serviceName,
 		})
 	})
 
