@@ -82,7 +82,23 @@ bus.PublishCommand(ctx, &MyCommand{Data: "hello"})
 
 ---
 
-### 5. `server/httpserver` — HTTP Server Utilities
+### 5. `eventrouter` — Message Router
+
+- Direct access to Watermill's router functionality for general message routing scenarios.
+- Message transformation, routing between topics, middleware support.
+
+**Usage Example:**
+```go
+import "github.com/duongptryu/gox/eventrouter"
+
+router, _ := eventrouter.NewRouter(eventrouter.Config{Logger: logger})
+router.AddHandler("processor", "input.topic", "output.topic", subscriber, publisher, handler)
+router.Run(ctx)
+```
+
+---
+
+### 6. `server/httpserver` — HTTP Server Utilities
 
 - Standardized Gin router setup, middleware pipeline, and graceful shutdown.
 - Health, readiness, and liveness endpoints out of the box.
@@ -98,19 +114,19 @@ srv.Start(context.Background())
 
 ---
 
-### 6. `database` — Database Connection & Migration
+### 7. `database` — Database Connection & Migration
 
 - Utilities for SQL database connection pooling and migrations (using `sqlx` and `golang-migrate`).
 
 ---
 
-### 7. `middleware` — HTTP Middleware
+### 8. `middleware` — HTTP Middleware
 
 - Common middleware for logging, CORS, error handling, recovery, authentication, and request context.
 
 ---
 
-### 8. `response` & `pagination`
+### 9. `response` & `pagination`
 
 - Helpers for standardized API responses and pagination handling.
 

@@ -45,6 +45,14 @@ func Init(cfg *Config) {
 	})
 }
 
+func GetLogger() *slog.Logger {
+	if logger == nil {
+		Init(nil)
+	}
+
+	return logger
+}
+
 type Field struct {
 	key   string
 	value any
