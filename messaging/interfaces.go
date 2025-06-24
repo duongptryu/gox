@@ -21,16 +21,16 @@ type EventHandler interface {
 }
 
 // Bus is the interface for publishing and subscribing to commands/events.
-type Bus interface {
+type Dispatcher interface {
 	RegisterCommandHandler(commandName string, handler CommandHandler) error
 	RegisterEventHandler(eventName string, handler EventHandler) error
 	Run(ctx context.Context) error
 }
 
-type BusCommand interface {
+type CommandBus interface {
 	PublishCommand(ctx context.Context, cmd Command) error
 }
 
-type BusEvent interface {
+type EventBus interface {
 	PublishEvent(ctx context.Context, evt Event) error
 }

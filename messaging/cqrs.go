@@ -28,7 +28,7 @@ type cqrsBus struct {
 }
 
 // NewBus creates a new CQRS event bus.
-func NewBus(cfg Config) (Bus, error) {
+func NewBus(cfg Config) (Dispatcher, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
