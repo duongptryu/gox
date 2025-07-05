@@ -113,7 +113,7 @@ func (b *cqrsBus) PublishEvent(ctx context.Context, evt Event) error {
 }
 
 func (b *cqrsBus) RegisterCommandHandler(commandName string, handler CommandHandler) error {
-	_, err := b.commandProcessor.AddHandler(cqrs.NewCommandHandler(commandName, handler.Handle))
+	_, err := b.commandProcessor.AddHandler(cqrs.NewCommandHandler(commandName, handler))
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (b *cqrsBus) RegisterCommandHandler(commandName string, handler CommandHand
 }
 
 func (b *cqrsBus) RegisterEventHandler(eventName string, handler EventHandler) error {
-	_, err := b.eventProcessor.AddHandler(cqrs.NewEventHandler(eventName, handler.Handle))
+	_, err := b.eventProcessor.AddHandler(cqrs.NewEventHandler(eventName, handler))
 	if err != nil {
 		return err
 	}

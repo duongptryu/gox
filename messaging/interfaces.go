@@ -11,14 +11,10 @@ type Command interface{}
 type Event interface{}
 
 // CommandHandler handles a command.
-type CommandHandler interface {
-	Handle(ctx context.Context, cmd *Command) error
-}
+type CommandHandler func(context.Context, *Command) error
 
 // EventHandler handles an event.
-type EventHandler interface {
-	Handle(ctx context.Context, evt *Event) error
-}
+type EventHandler func(context.Context, *Event) error
 
 // Bus is the interface for publishing and subscribing to commands/events.
 type Dispatcher interface {
