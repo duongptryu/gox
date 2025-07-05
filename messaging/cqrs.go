@@ -104,11 +104,11 @@ func NewBus(cfg Config) (Dispatcher, error) {
 	}, nil
 }
 
-func (b *cqrsBus) PublishCommand(ctx context.Context, cmd Command) error {
+func (b *cqrsBus) PublishCommand(ctx context.Context, cmd any) error {
 	return b.commandBus.Send(ctx, cmd)
 }
 
-func (b *cqrsBus) PublishEvent(ctx context.Context, evt Event) error {
+func (b *cqrsBus) PublishEvent(ctx context.Context, evt any) error {
 	return b.eventBus.Publish(ctx, evt)
 }
 

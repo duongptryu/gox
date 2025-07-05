@@ -4,17 +4,11 @@ import (
 	"context"
 )
 
-// Command represents a CQRS command.
-type Command interface{}
-
-// Event represents a CQRS event.
-type Event interface{}
-
 // CommandHandler handles a command.
-type CommandHandler func(context.Context, *Command) error
+type CommandHandler func(context.Context, *any) error
 
 // EventHandler handles an event.
-type EventHandler func(context.Context, *Event) error
+type EventHandler func(context.Context, *any) error
 
 // Bus is the interface for publishing and subscribing to commands/events.
 type Dispatcher interface {
@@ -24,9 +18,9 @@ type Dispatcher interface {
 }
 
 type CommandBus interface {
-	PublishCommand(ctx context.Context, cmd Command) error
+	PublishCommand(ctx context.Context, cmd any) error
 }
 
 type EventBus interface {
-	PublishEvent(ctx context.Context, evt Event) error
+	PublishEvent(ctx context.Context, evt any) error
 }
