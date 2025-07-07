@@ -28,7 +28,7 @@ type cqrsBus struct {
 }
 
 // NewBus creates a new CQRS event bus.
-func NewBus(cfg Config) (Dispatcher, error) {
+func NewBus(cfg Config) (*cqrsBus, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
@@ -102,6 +102,14 @@ func NewBus(cfg Config) (Dispatcher, error) {
 		logger:           cfg.Logger,
 		marshaler:        marshaler,
 	}, nil
+}
+
+func (b *cqrsBus) GetCommandBus() CommandBus {
+	return b
+}
+
+func (b *cqrsBus) GetEventBus() EventBus {
+	return b
 }
 
 func (b *cqrsBus) PublishCommand(ctx context.Context, cmd any) error {
