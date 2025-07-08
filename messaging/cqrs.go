@@ -2,11 +2,14 @@ package messaging
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/duongptryu/gox/logger"
 )
 
 // Config holds configuration for the event bus.
@@ -33,6 +36,14 @@ func NewBus(cfg Config) (*cqrsBus, error) {
 		cfg.Logger = slog.Default()
 	}
 
+	generateEventTopic := func(eventName string) string {
+		return fmt.Sprintf("events.%s", eventName)
+	}
+
+	generateCommandTopic := func(commandName string) string {
+		return fmt.Sprintf("commands.%s", commandName)
+	}
+
 	wmLogger := watermill.NewSlogLogger(cfg.Logger)
 	marshaler := cqrs.JSONMarshaler{
 		GenerateName: cqrs.StructName,
@@ -45,10 +56,15 @@ func NewBus(cfg Config) (*cqrsBus, error) {
 
 	commandBus, err := cqrs.NewCommandBusWithConfig(cfg.Publisher, cqrs.CommandBusConfig{
 		GeneratePublishTopic: func(params cqrs.CommandBusGeneratePublishTopicParams) (string, error) {
-			return "commands." + params.CommandName, nil
+			return generateCommandTopic(params.CommandName), nil
 		},
 		Marshaler: marshaler,
 		Logger:    wmLogger,
+		OnSend: func(params cqrs.CommandBusOnSendParams) error {
+			logger.Info(params.Message.Context(), "Sending command", logger.F("command_name", params.CommandName))
+			params.Message.Metadata.Set("sent_at", time.Now().String())
+			return nil
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -56,10 +72,15 @@ func NewBus(cfg Config) (*cqrsBus, error) {
 
 	eventBus, err := cqrs.NewEventBusWithConfig(cfg.Publisher, cqrs.EventBusConfig{
 		GeneratePublishTopic: func(params cqrs.GenerateEventPublishTopicParams) (string, error) {
-			return "events." + params.EventName, nil
+			return generateEventTopic(params.EventName), nil
 		},
 		Marshaler: marshaler,
 		Logger:    wmLogger,
+		OnPublish: func(params cqrs.OnEventSendParams) error {
+			logger.Info(params.Message.Context(), "Publishing event", logger.F("event_name", params.EventName))
+			params.Message.Metadata.Set("published_at", time.Now().String())
+			return nil
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -67,13 +88,26 @@ func NewBus(cfg Config) (*cqrsBus, error) {
 
 	commandProcessor, err := cqrs.NewCommandProcessorWithConfig(router, cqrs.CommandProcessorConfig{
 		GenerateSubscribeTopic: func(params cqrs.CommandProcessorGenerateSubscribeTopicParams) (string, error) {
-			return "commands." + params.CommandName, nil
+			return generateCommandTopic(params.CommandName), nil
 		},
 		SubscriberConstructor: func(params cqrs.CommandProcessorSubscriberConstructorParams) (message.Subscriber, error) {
 			return cfg.Subscriber, nil
 		},
 		Marshaler: marshaler,
 		Logger:    wmLogger,
+		OnHandle: func(params cqrs.CommandProcessorOnHandleParams) error {
+			start := time.Now()
+
+			err := params.Handler.Handle(params.Message.Context(), params.Command)
+
+			logger.Info(params.Message.Context(), "Command handled",
+				logger.F("command_name", params.CommandName),
+				logger.F("duration", time.Since(start)),
+				logger.F("err", err),
+			)
+
+			return err
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -81,13 +115,26 @@ func NewBus(cfg Config) (*cqrsBus, error) {
 
 	eventProcessor, err := cqrs.NewEventProcessorWithConfig(router, cqrs.EventProcessorConfig{
 		GenerateSubscribeTopic: func(params cqrs.EventProcessorGenerateSubscribeTopicParams) (string, error) {
-			return "events." + params.EventName, nil
+			return generateEventTopic(params.EventName), nil
 		},
 		SubscriberConstructor: func(params cqrs.EventProcessorSubscriberConstructorParams) (message.Subscriber, error) {
 			return cfg.Subscriber, nil
 		},
 		Marshaler: marshaler,
 		Logger:    wmLogger,
+		OnHandle: func(params cqrs.EventProcessorOnHandleParams) error {
+			start := time.Now()
+
+			err := params.Handler.Handle(params.Message.Context(), params.Event)
+
+			logger.Info(params.Message.Context(), "Event handled",
+				logger.F("event_name", params.EventName),
+				logger.F("duration", time.Since(start)),
+				logger.F("err", err),
+			)
+
+			return err
+		},
 	})
 	if err != nil {
 		return nil, err
