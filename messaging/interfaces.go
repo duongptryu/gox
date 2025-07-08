@@ -2,6 +2,8 @@ package messaging
 
 import (
 	"context"
+
+	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 )
 
 // CommandHandler handles a command.
@@ -14,6 +16,8 @@ type EventHandler func(context.Context, *any) error
 type Dispatcher interface {
 	RegisterCommandHandler(commandName string, handler CommandHandler) error
 	RegisterEventHandler(eventName string, handler EventHandler) error
+	GetCommandProcessor() *cqrs.CommandProcessor
+	GetEventProcessor() *cqrs.EventProcessor
 	Run(ctx context.Context) error
 }
 

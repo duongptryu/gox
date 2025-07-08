@@ -112,6 +112,14 @@ func (b *cqrsBus) GetEventBus() EventBus {
 	return b
 }
 
+func (b *cqrsBus) GetCommandProcessor() *cqrs.CommandProcessor {
+	return b.commandProcessor
+}
+
+func (b *cqrsBus) GetEventProcessor() *cqrs.EventProcessor {
+	return b.eventProcessor
+}
+
 func (b *cqrsBus) PublishCommand(ctx context.Context, cmd any) error {
 	return b.commandBus.Send(ctx, cmd)
 }
