@@ -9,6 +9,8 @@ import (
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
+	"github.com/ThreeDotsLabs/watermill/message/router/plugin"
 	"github.com/duongptryu/gox/logger"
 )
 
@@ -53,6 +55,26 @@ func NewBus(cfg Config) (*cqrsBus, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	retryMiddleware := middleware.Retry{
+		MaxRetries:      3,
+		InitialInterval: time.Millisecond * 10,
+	}
+
+	poisonQueue, err := middleware.PoisonQueue(cfg.Publisher, "poison_queue")
+	if err != nil {
+		return nil, err
+	}
+
+	router.AddMiddleware(
+		middleware.Recoverer,
+		middleware.NewThrottle(10, time.Second).Middleware,
+		poisonQueue,
+		retryMiddleware.Middleware,
+		middleware.CorrelationID,
+	)
+
+	router.AddPlugin(plugin.SignalsHandler)
 
 	commandBus, err := cqrs.NewCommandBusWithConfig(cfg.Publisher, cqrs.CommandBusConfig{
 		GeneratePublishTopic: func(params cqrs.CommandBusGeneratePublishTopicParams) (string, error) {
