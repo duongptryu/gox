@@ -3,6 +3,7 @@ package syserr
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	pkgError "github.com/pkg/errors"
@@ -35,7 +36,7 @@ func F(key string, value any) *Field {
 }
 
 func New(code Code, message string, fields ...*Field) *Error {
-	stack := extractStackFromGenericError(pkgError.New(""))
+	stack := extractStackFromGenericError(pkgError.New(message))
 	return &Error{
 		Message: message,
 		code:    code,
@@ -45,9 +46,24 @@ func New(code Code, message string, fields ...*Field) *Error {
 }
 
 func Wrap(err error, code Code, message string, fields ...*Field) *Error {
-	newError := New(code, message, fields...)
-	newError.WrappedError = err
-	return newError
+	// Try to extract stack trace from the original error first
+	var originalStack []*ErrorStackItem
+	if err != nil {
+		originalStack = extractStackFromGenericError(err)
+	}
+
+	// If no original stack trace, create a new one
+	if len(originalStack) == 0 {
+		originalStack = extractStackFromGenericError(pkgError.New(message))
+	}
+
+	return &Error{
+		Message:      message,
+		code:         code,
+		fields:       fields,
+		Stack:        originalStack,
+		WrappedError: err,
+	}
 }
 func WrapAsIs(err error, message string, fields ...*Field) *Error {
 	newError := New(extractCodeFromGenericError(err), message, fields...)
@@ -98,10 +114,23 @@ func extractStackFromGenericError(err error) []*ErrorStackItem {
 	result := make([]*ErrorStackItem, len(stackTrace))
 
 	for index, frame := range stackTrace {
-		result[index] = &ErrorStackItem{
-			File:     getFrameFilePath(frame),
-			Line:     fmt.Sprintf("%d", frame),
-			Function: fmt.Sprintf("%s", frame),
+		// Get detailed information from frame
+		pc := uintptr(frame) - 1
+		fn := runtime.FuncForPC(pc)
+		if fn != nil {
+			file, line := fn.FileLine(pc)
+			result[index] = &ErrorStackItem{
+				File:     file,
+				Line:     fmt.Sprintf("%d", line),
+				Function: fn.Name(),
+			}
+		} else {
+			// Fallback to old method if runtime info not available
+			result[index] = &ErrorStackItem{
+				File:     getFrameFilePath(frame),
+				Line:     fmt.Sprintf("%d", frame),
+				Function: fmt.Sprintf("%s", frame),
+			}
 		}
 	}
 
